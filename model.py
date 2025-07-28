@@ -27,7 +27,30 @@ class BERT_Embedding(nn.Module):
         positions = mx.arange(stop=tokens.shape(1))
         tokens = self.token_embeddings(tokens) + self.positional_embeddings(positions)
         return self.layer_norm(tokens)
+    
+class BERT_Attention(nn.Module):
+    def __init__(self, num_embd: int, num_heads: int):
+        super().__init__()
+        self.num_embd = num_embd
+        self.num_heads = num_heads
 
+        assert num_embd % num_heads == 0
+        self.head_dim = num_embd // num_heads
+        self.qkv = nn.Linear(num_embd, num_embd*3) # we multiply by 3 to get the q, k, and v matrices together
+        self.output = nn.Linear(num_embd, num_embd)
+
+    def __call__(self, tokens: mx.array, mask):
+        B, T, C = tokens.shape() # B = Batch size, T = Block size, C = Channel Size
+        qkv = self.qkv(tokens).reshape(B, T, 3, self.num_heads, self.head_dim).transpose(1, 3)
+        q, k, v = qkv[:, :, 0], qkv[:, :, 1], qkv[:, :, 2]
+        attention = (q @ k.transpose(-2, -1)) / math.sqrt(self.head_dim)
+
+        if mask is not None:
+            attention = attention.masked_fill(mask == 0, -1e9)
+
+        attn_probs = attention.softmax(dim=-1)
+        context = (attn_probs @ v).transpose(1, 2).reshape(B, T, C)
+        return self.output(context)
 
 class Block(nn.Module):
     def __init__(self, config: BERT_Config):
