@@ -14,19 +14,44 @@ def load_config(config_path="config.yaml"):
 
 @dataclass
 class BERT_Config:
-    config = load_config()
+    num_embd: int
+    num_layers: int
+    num_heads: int
+    hidden_embd: int
+    vocab_size: int
+    block_size: int
+
+    @staticmethod
+    def from_yaml(path="config.yaml"):
+        config = load_config(path)
+        return BERT_Config(
+            num_embd=config['model']['num_embd'],
+            num_layers=config['model']['num_layers'],
+            num_heads=config['model']['num_heads'],
+            hidden_embd=config['model']['hidden_embd'],
+            vocab_size=config['model']['vocab_size'],
+            block_size=config['model']['block_size']
+        )
 
 class BERT_Embedding(nn.Module):
-    def __init__(self, vocab_size: int, num_embd: int):
+    def __init__(self, vocab_size: int, block_size: int, num_embd: int):
         super().__init__()
         self.token_embeddings = nn.Embedding(vocab_size, num_embd)
-        self.positional_embeddings = nn.Embedding(vocab_size, num_embd)
+        self.positional_embeddings = nn.Embedding(block_size, num_embd)
         self.layer_norm = nn.LayerNorm(dims=num_embd)
 
-    def __call__(self, tokens: mx.array):
-        positions = mx.arange(stop=tokens.shape(1))
-        tokens = self.token_embeddings(tokens) + self.positional_embeddings(positions)
-        return self.layer_norm(tokens)
+    def __call__(self, tokens):
+        B, T = tokens.shape
+
+        tokens = mx.array(tokens, dtype=mx.int32)
+        positions = mx.arange(T)
+        positions = mx.broadcast_to(positions, (B, T))
+        positions = mx.array(positions, dtype=mx.int32)
+
+        tokens_emb = self.token_embeddings(tokens)
+        positions_emb = self.positional_embeddings(positions)
+
+        return self.layer_norm(tokens_emb + positions_emb)
     
 class BERT_Attention(nn.Module):
     def __init__(self, num_embd: int, num_heads: int):
@@ -40,16 +65,19 @@ class BERT_Attention(nn.Module):
         self.output = nn.Linear(num_embd, num_embd)
 
     def __call__(self, tokens: mx.array, mask):
-        B, T, C = tokens.shape() # B = Batch size, T = Block size, C = Channel Size
-        qkv = self.qkv(tokens).reshape(B, T, 3, self.num_heads, self.head_dim).transpose(1, 3)
-        q, k, v = qkv[:, :, 0], qkv[:, :, 1], qkv[:, :, 2]
-        attention = (q @ k.transpose(-2, -1)) / math.sqrt(self.head_dim)
+        B, T, C = tokens.shape
+        qkv = self.qkv(tokens).reshape(B, T, 3, self.num_heads, self.head_dim)
+        qkv = mx.transpose(qkv, (0, 3, 1, 2, 4))
+        q, k, v = qkv[..., 0, :], qkv[..., 1, :], qkv[..., 2, :]
+        attention = (q @ mx.transpose(k, (0, 1, 3, 2))) / math.sqrt(self.head_dim)
 
         if mask is not None:
-            attention = attention.masked_fill(mask == 0, -1e9)
+            attention = mx.where(mask == 0, -1e9, attention)
 
-        attn_probs = attention.softmax(dim=-1)
-        context = (attn_probs @ v).transpose(1, 2).reshape(B, T, C)
+        attn_probs = mx.softmax(attention, axis=-1)
+        context = attn_probs @ v
+        context = mx.transpose(context, (0, 2, 1, 3)).reshape(B, T, C)
+
         return self.output(context)
 
 class Block(nn.Module):
@@ -66,32 +94,23 @@ class Block(nn.Module):
 
     def __call__(self, tokens: mx.array, mask=None):
         tokens = self.layer_norm1(tokens + self.attention(tokens, mask))
-        tokens = self.layer_norm2(tokens + self.ff(tokens))
+        tokens = self.layer_norm2(tokens + self.feedforward(tokens))
         return tokens
-
-class BERT_Classification(nn.Module):
-    def __init__(self, config: BERT_Config):
-        super().__init__()
-
-    def __call__(self, tokens: mx.array):
-    
 
 class BERT(nn.Module):
     def __init__(self, config: BERT_Config):
         super().__init__()
         self.config = config
-
-        self.transformer = {
-            "embedding": BERT_Embedding(config.vocab_size, config.num_embd),
-            "blocks": [Block(config) for _ in range(config.num_layers)],
-            "output_proj": BERT_Classification(config.num_embd, config.vocab_size)
-        }
+        self.embedding = BERT_Embedding(config.vocab_size, config.block_size, config.num_embd)
+        self.blocks = [Block(config) for _ in range(config.num_layers)]
+        self.output_proj = nn.Linear(config.num_embd, config.vocab_size)
 
     def __call__(self, tokens: mx.array):
-        x = self.transformer[embedding](x)
-        for block in self.transformer[blocks]:
-            x = block(x)
-        return self.transformer[output_proj](x) 
+        tokens = self.embedding(tokens)
+        for block in self.blocks:
+            tokens = block(tokens)
+        return self.output_proj(tokens) 
 
 if __name__ == "__main__":
-    print("hello")
+    config = BERT_Config.from_yaml()
+    model = BERT(config)
