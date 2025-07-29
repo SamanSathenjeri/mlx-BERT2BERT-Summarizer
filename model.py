@@ -1,11 +1,8 @@
 import math
 import yaml
-import numpy as np
 from dataclasses import dataclass
 import mlx.core as mx
 import mlx.nn as nn
-import mlx.optimizers as optim
-import mlx.utils as utils
 
 def load_config(config_path="config.yaml"):
     with open(config_path, 'r') as file:
@@ -43,10 +40,10 @@ class BERT_Embedding(nn.Module):
     def __call__(self, tokens):
         B, T = tokens.shape
 
-        tokens = mx.array(tokens, dtype=mx.int32)
+        tokens = tokens.astype(mx.int32) 
         positions = mx.arange(T)
         positions = mx.broadcast_to(positions, (B, T))
-        positions = mx.array(positions, dtype=mx.int32)
+        positions = positions.astype(mx.int32) 
 
         tokens_emb = self.token_embeddings(tokens)
         positions_emb = self.positional_embeddings(positions)
@@ -90,6 +87,7 @@ class Block(nn.Module):
             nn.GELU(),
             nn.Linear(config.hidden_embd, config.num_embd)
         )
+
         self.layer_norm2 = nn.LayerNorm(dims=config.num_embd)
 
     def __call__(self, tokens: mx.array, mask=None):
@@ -102,13 +100,14 @@ class BERT(nn.Module):
         super().__init__()
         self.config = config
         self.embedding = BERT_Embedding(config.vocab_size, config.block_size, config.num_embd)
-        self.blocks = [Block(config) for _ in range(config.num_layers)]
+        self.blocks = nn.Sequential(
+            *[Block(config) for _ in range(config.num_layers)],
+        )
         self.output_proj = nn.Linear(config.num_embd, config.vocab_size)
 
     def __call__(self, tokens: mx.array):
         tokens = self.embedding(tokens)
-        for block in self.blocks:
-            tokens = block(tokens)
+        tokens = self.blocks(tokens)
         return self.output_proj(tokens) 
 
 if __name__ == "__main__":
