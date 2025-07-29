@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from datasets import load_dataset, concatenate_datasets
 from transformers import BertTokenizerFast
-from model import BERT, BERT_Config
+from BERTEncoder import BERT, BERT_Config
 
 def compute_loss(params, model_instance_for_forward, inputs, targets):
     model_copy = type(model_instance_for_forward)(model_instance_for_forward.config)
@@ -47,9 +47,6 @@ def train(model, train_data, batch_size, num_epochs, learning_rate):
             mx.eval(model.parameters(), optimizer.state) 
 
             total_loss += loss.item()
-
-            # if i % 1000 == 0:
-            #     print(f"Step {i} | Loss: {loss.item():.4f}")
 
         avg_loss = total_loss / num_batches
         print(f"Epoch {epoch+1} avg loss: {avg_loss:.4f}")
@@ -136,3 +133,7 @@ if __name__ == "__main__":
         print(f"MLX BERT model weights successfully saved to {output_file_path}")
     except Exception as e:
         print(f"Error saving MLX model weights: {e}")
+
+# epoch 1 = 7.1007
+# epoch 2 = 6.7244
+# epoch 3 = 6.5495

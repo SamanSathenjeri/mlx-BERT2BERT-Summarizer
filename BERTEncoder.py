@@ -49,33 +49,36 @@ class BERT_Embedding(nn.Module):
         positions_emb = self.positional_embeddings(positions)
 
         return self.layer_norm(tokens_emb + positions_emb)
-    
-class BERT_Attention(nn.Module):
-    def __init__(self, num_embd: int, num_heads: int):
-        super().__init__()
-        self.num_embd = num_embd
-        self.num_heads = num_heads
 
+class BERT_Attention(nn.Module):
+    def __init__(self, num_embd, num_heads):
+        super().__init__()
         assert num_embd % num_heads == 0
+        self.num_heads = num_heads
         self.head_dim = num_embd // num_heads
-        self.qkv = nn.Linear(num_embd, num_embd*3) # we multiply by 3 to get the q, k, and v matrices together
+        self.scale = math.sqrt(self.head_dim)
+
+        self.q = nn.Linear(num_embd, num_embd)
+        self.k = nn.Linear(num_embd, num_embd)
+        self.v = nn.Linear(num_embd, num_embd)
         self.output = nn.Linear(num_embd, num_embd)
 
-    def __call__(self, tokens: mx.array, mask):
-        B, T, C = tokens.shape
-        qkv = self.qkv(tokens).reshape(B, T, 3, self.num_heads, self.head_dim)
-        qkv = mx.transpose(qkv, (0, 3, 1, 2, 4))
-        q, k, v = qkv[..., 0, :], qkv[..., 1, :], qkv[..., 2, :]
-        attention = (q @ mx.transpose(k, (0, 1, 3, 2))) / math.sqrt(self.head_dim)
+    def __call__(self, x, mask=None):
+        B, T, _ = x.shape
+        q = self.q(x).reshape(B, T, self.num_heads, self.head_dim).transpose((0, 2, 1, 3))
+        k = self.k(x).reshape(B, T, self.num_heads, self.head_dim).transpose((0, 2, 1, 3))
+        v = self.v(x).reshape(B, T, self.num_heads, self.head_dim).transpose((0, 2, 1, 3))
+
+        attn_scores = (q @ mx.transpose(k, (0, 1, 3, 2))) / self.scale  # (B, H, T, T)
 
         if mask is not None:
-            attention = mx.where(mask == 0, -1e9, attention)
+            attn_scores = mx.where(mask == 0, -1e9, attn_scores)
 
-        attn_probs = mx.softmax(attention, axis=-1)
-        context = attn_probs @ v
-        context = mx.transpose(context, (0, 2, 1, 3)).reshape(B, T, C)
+        attn_weights = mx.softmax(attn_scores, axis=-1)
+        output = attn_weights @ v
+        output = output.transpose((0, 2, 1, 3)).reshape(B, T, -1)
 
-        return self.output(context)
+        return self.output(output)
 
 class Block(nn.Module):
     def __init__(self, config: BERT_Config):
@@ -95,6 +98,7 @@ class Block(nn.Module):
         tokens = self.layer_norm2(tokens + self.feedforward(tokens))
         return tokens
 
+
 class BERT(nn.Module):
     def __init__(self, config: BERT_Config):
         super().__init__()
@@ -105,10 +109,10 @@ class BERT(nn.Module):
         )
         self.output_proj = nn.Linear(config.num_embd, config.vocab_size)
 
-    def __call__(self, tokens: mx.array):
+    def __call__(self, tokens: mx.array, mask=None):
         tokens = self.embedding(tokens)
-        tokens = self.blocks(tokens)
-        return self.output_proj(tokens) 
+        tokens = self.blocks(tokens, mask=mask)
+        return self.output_proj(tokens)
 
 if __name__ == "__main__":
     config = BERT_Config.from_yaml()
