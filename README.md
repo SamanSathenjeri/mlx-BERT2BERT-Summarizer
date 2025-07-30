@@ -35,7 +35,7 @@ Install your requirements
 > pip install -r requirements.txt
 
 Change your config parameters (model architecture and training parameters) to your liking in the config.yaml file
-'''yaml
+```yaml
 model:
    num_embd: 256              # number of dimensions to represent the token
    num_layers: 4              # number of transformer blocks
@@ -48,7 +48,7 @@ training:
    batch_size: 32             # Batches trained at the same time
    num_epochs: 15             # number of complete passes through the dataset
    learning_rate: 0.0003      # learning rate for training
-'''
+```
 
 ##### Usage:
 
@@ -63,16 +63,16 @@ How to run this model?
 
 How to use the interactive CLI (command line interface)?
 - To exit the CLI, run:
-> >exit
+``` >exit ```
 
 - To run a ROUGE score evaluation, run:
-> >eval
+``` >eval ```
 
 - You can input your own text for summarization:
-> >Yesterday, I went to the park and saw many children playing on the swings and slides. It was a beautiful, sunny afternoon.
+``` >Yesterday, I went to the park and saw many children playing on the swings and slides. It was a beautiful, sunny afternoon. ```
 
 - You can upload a file to summarize:
-> >file file.txt
+``` >file file.txt ```
 
 ---
 
@@ -91,7 +91,7 @@ https://www.geeksforgeeks.org/nlp/cross-attention-mechanism-in-transformers/
 Now, since sentence summarization is a Sequence-to-Sequence task (Seq2Seq), we require an decoder to "uncover" what the encoder has found. Here, we are taking the BERT model and slightly altering it to understand the encoder's information and generate an autoregressive summary of the input. Here we employ two different techniques.
 - Cross Attention Layers - these act as the handshake between the encoder and decoder and will allow the sharing of information from the encoder to the decoder. This is done by allowing the decoder to "attend" to the encoders's output, which in turn will allow the decoder to use that information.
 
-'''py
+```py
 class CrossAttention(nn.Module):
     def __init__(self, num_embd, num_heads):
         super().__init__()
@@ -127,7 +127,7 @@ class CrossAttention(nn.Module):
             return output, attn_weights // this is for creating attention maps
         
         return output
-'''
+```
 
 - Causal Masking - This is a very important technique in attention mechanisms and is used to prevent models from peeking at "future" tokens. So, when the decoder is training, it learns to not use the future tokens to provide context to the previous tokens (exactly like how we read from left to right... you dont know what the end of the sentence is until you have read from the start)
 
