@@ -1,15 +1,12 @@
 model:
-   num_embd: 128              # number of dimensions to represent the token
-   num_layers: 2              # number of transformer blocks
-   num_heads: 4               # Number of attention heads per block (head_dimension = num_embd//num_attention heads)
-   hidden_embd: 512           # Overall FeedForward dim size (4 * n_embd)
+   num_embd: 256              # number of dimensions to represent the token
+   num_layers: 4              # number of transformer blocks
+   num_heads: 8               # Number of attention heads per block (head_dimension = num_embd//num_attention heads)
+   hidden_embd: 1024          # Overall FeedForward dim size (4 * n_embd)
    vocab_size: 30522          # number of tokens in the vocabulary
    block_size: 64             # Context size
 
 training:
-   max_batch_size: 16         # Maximum number of batches trained at the same time
-   num_epochs: 10             # number of complete passes through the dataset
+   batch_size: 32             # Batches trained at the same time
+   num_epochs: 15             # number of complete passes through the dataset
    learning_rate: 0.0003      # learning rate for training
-   warmup_steps: 1000         # starting steps with low learning rate
-   num_predicted_tokens: 2    # number of future tokens that are simultaneously predicted
-   max_seq_len: 1024          # Maximum sequence length.   

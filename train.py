@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from datasets import load_dataset, concatenate_datasets
 from transformers import BertTokenizerFast
-from BERTEncoder import BERT, BERT_Config
+from BERTEncoder import BERT, BERT_Config, load_config
 
 def compute_loss(params, model_instance_for_forward, inputs, targets):
     model_copy = type(model_instance_for_forward)(model_instance_for_forward.config)
@@ -55,7 +55,7 @@ if __name__ == "__main__":
     config = BERT_Config.from_yaml()
     model = BERT(config)
     tokenizer = BertTokenizerFast.from_pretrained("bert-base-uncased")
-    dataset = load_dataset("wikitext", "wikitext-2-raw-v1", split="train")
+    dataset = load_dataset("wikitext", "wikitext-103-v1", split="train")
     block_size = 128
 
     print("loaded dataset")
@@ -111,7 +111,15 @@ if __name__ == "__main__":
     dummy_input = mx.zeros((1, config.block_size), dtype=mx.int32)
     _ = model(dummy_input)
 
-    train(model, train_data, batch_size=1, num_epochs=10, learning_rate=1e-4)
+    def load_train_configs(path="config.yaml"):
+        config = load_config(path)
+        return config['training']['batch_size'], config['training']['num_epochs'], config['training']['learning_rate']
+
+    batch_size, num_epochs, learning_rate = load_train_configs()
+    steps_per_epoch = train_data['input_ids'].shape[0] // batch_size
+    lr_schedule = optim.cosine_decay(learning_rate, num_epochs*steps_per_epoch)
+
+    train(model, train_data, batch_size=batch_size, num_epochs=num_epochs, learning_rate=lr_schedule)
 
     mx.eval(model.parameters())
     flat_weights = dict(utils.tree_flatten(model.parameters()))
@@ -133,7 +141,3 @@ if __name__ == "__main__":
         print(f"MLX BERT model weights successfully saved to {output_file_path}")
     except Exception as e:
         print(f"Error saving MLX model weights: {e}")
-
-# epoch 1 = 7.1007
-# epoch 2 = 6.7244
-# epoch 3 = 6.5495

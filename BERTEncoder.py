@@ -63,7 +63,7 @@ class BERT_Attention(nn.Module):
         self.v = nn.Linear(num_embd, num_embd)
         self.output = nn.Linear(num_embd, num_embd)
 
-    def __call__(self, x, mask=None):
+    def __call__(self, x, mask=None, return_attn=False):
         B, T, _ = x.shape
         q = self.q(x).reshape(B, T, self.num_heads, self.head_dim).transpose((0, 2, 1, 3))
         k = self.k(x).reshape(B, T, self.num_heads, self.head_dim).transpose((0, 2, 1, 3))
@@ -76,6 +76,7 @@ class BERT_Attention(nn.Module):
 
         attn_weights = mx.softmax(attn_scores, axis=-1)
         output = attn_weights @ v
+        # print(f"attn_weights shape: {attn_weights.shape}, output shape: {output.shape}")
         output = output.transpose((0, 2, 1, 3)).reshape(B, T, -1)
 
         return self.output(output)
@@ -100,19 +101,28 @@ class Block(nn.Module):
 
 
 class BERT(nn.Module):
-    def __init__(self, config: BERT_Config):
+    def __init__(self, config: BERT_Config, encoder_Flag=False):
         super().__init__()
         self.config = config
         self.embedding = BERT_Embedding(config.vocab_size, config.block_size, config.num_embd)
-        self.blocks = nn.Sequential(
-            *[Block(config) for _ in range(config.num_layers)],
-        )
+        # self.blocks = nn.Sequential(
+        #     *[Block(config) for _ in range(config.num_layers)],
+        # )
+        self.blocks = [Block(config) for _ in range(config.num_layers)]
+
+        self.encoder_Flag = encoder_Flag
         self.output_proj = nn.Linear(config.num_embd, config.vocab_size)
 
-    def __call__(self, tokens: mx.array, mask=None):
+    def __call__(self, tokens: mx.array, mask=None, return_embeddings=False):
         tokens = self.embedding(tokens)
-        tokens = self.blocks(tokens, mask=mask)
-        return self.output_proj(tokens)
+
+        for block in self.blocks:
+            tokens = block(tokens, mask=mask)
+
+        if not self.encoder_Flag:
+            return self.output_proj(tokens)
+
+        return tokens
 
 if __name__ == "__main__":
     config = BERT_Config.from_yaml()
