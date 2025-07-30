@@ -78,8 +78,8 @@ How to use the interactive CLI (command line interface)?
 
 ### Architecture
 
-![BERT2BERT Architecture](https://www.researchgate.net/profile/Tarek-Naous/publication/349868790/figure/fig2/AS:998754173857792@1615132959673/Architecture-of-the-proposed-BERT2BERT-model-initialized-with-AraBERT-checkpoints-for.png)
-Naous, Tarek & Antoun, Wissam & Mahmoud, Reem & Hajj, Hazem. (2021). Empathetic BERT2BERT Conversational Model: Learning Arabic Language Generation with Little Data. 10.48550/arXiv.2103.04353. 
+![BERT2BERT Architecture](https://media.springernature.com/lw685/springer-static/image/chp%3A10.1007%2F978-3-031-53082-1_21/MediaObjects/555869_1_En_21_Fig1_HTML.png)  
+Boussakssou, M., Erritali, M. (2024). An Arabic Chatbot Leveraging Encoder-Decoder Architecture Enhanced with BERT. In: Santosh, K., et al. Recent Trends in Image Processing and Pattern Recognition. RTIP2R 2023. Communications in Computer and Information Science, vol 2026. Springer, Cham. https://doi.org/10.1007/978-3-031-53082-1_21
 
 #### Overview
 
