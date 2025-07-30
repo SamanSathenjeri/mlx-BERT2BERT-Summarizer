@@ -1,4 +1,4 @@
-# 🧠 BERT2BERT Summarization with Attention Visualizations using MLX
+# BERT2BERT Summarization using Apple Silicon MLX Framework
 
 A custom encoder-decoder transformer built from scratch in [MLX](https://github.com/ml-explore/mlx), designed for text summarization using a pretrained BERT encoder and a lightweight BERT-style decoder. Trained on whole WikiText-103-v1 dataset (100 million tokens) in under 2 hours and Finetuned on the CNN/Dailymail dataset for text summarization (300,000 unique news articles or around 260 million tokens) within 4 hours.
 
