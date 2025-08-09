@@ -15,7 +15,7 @@ SEQ_LEN = 256
 NUM_EPOCHS = 10
 LR = 1e-4
 PAD_TOKEN_ID = 0
-PRETRAINED_ENCODER_PATH = "BERT_weights.safetensors"
+PRETRAINED_ENCODER_PATH = "safetensors/BERT_weights.safetensors"
 
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased", model_max_length=SEQ_LEN)
 tokenizer.pad_token = tokenizer.eos_token or tokenizer.sep_token or "[PAD]"
@@ -37,17 +37,20 @@ def preprocess(example):
         "padding_mask": decoder["attention_mask"][0][1:].astype("float32"),
     }
 
+raw_train_dataset = load_dataset("cnn_dailymail", "3.0.0", split="train", streaming=True).with_format("python")
+val_raw_dataset = load_dataset("cnn_dailymail", "3.0.0", split="validation", streaming=True).with_format("python")
 
-raw_dataset = load_dataset("cnn_dailymail", "3.0.0", split="train", streaming=True)
-val_dataset = load_dataset("cnn_dailymail", "3.0.0", split="validation", streaming=True)
-# train_split_idx = int(len(raw_dataset) * 0.9)
-# raw_train_dataset = raw_dataset.select(range(train_split_idx))
-# raw_val_dataset = raw_dataset.select(range(train_split_idx, len(raw_dataset)))
-raw_train_dataset = [preprocess(e) for e in raw_dataset if preprocess(e) is not None]
-raw_val_dataset = [preprocess(e) for e in val_dataset if preprocess(e) is not None]
+train_dataset = []
+for e in raw_train_dataset:
+    item = preprocess(e)
+    if item is not None:
+        train_dataset.append(item)
 
-train_dataset = [preprocess(e) for e in raw_train_dataset if preprocess(e) is not None]
-val_dataset = [preprocess(e) for e in raw_val_dataset if preprocess(e) is not None]
+val_dataset = []
+for e in val_raw_dataset:
+    item = preprocess(e)
+    if item is not None:
+        val_dataset.append(item)
 
 def create_batches(data, batch_size):
     filtered_data = [d for d in data if d is not None]
@@ -66,6 +69,7 @@ model.encoder.load_weights(PRETRAINED_ENCODER_PATH)
 optimizer = optim.AdamW(learning_rate=LR)
 
 def seq2seq_loss(logits, labels, padding_mask):
+    print(type(logits))
     vocab_size = logits.shape[-1]
     logits = logits.reshape(-1, vocab_size)
     labels = labels.flatten()
@@ -135,4 +139,4 @@ plt.grid(True)
 plt.show()
 
 # saving model
-model.save_weights("bert2bert_decoder.safetensors")
+model.save_weights("safetensors/bert2bert_decoder.safetensors")

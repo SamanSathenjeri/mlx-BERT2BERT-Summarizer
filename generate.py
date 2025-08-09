@@ -13,7 +13,7 @@ MAX_GEN_LEN = 64
 rouge = evaluate.load("rouge")
 config = BERT_Config.from_yaml("config.yaml")
 model = BERT2BERT(config)
-model.load_weights("bert2bert_decoder.safetensors")
+model.load_weights("safetensors/bert2bert_decoder.safetensors")
 # model.eval()
 
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")

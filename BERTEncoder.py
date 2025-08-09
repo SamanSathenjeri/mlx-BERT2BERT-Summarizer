@@ -79,6 +79,8 @@ class BERT_Attention(nn.Module):
         # print(f"attn_weights shape: {attn_weights.shape}, output shape: {output.shape}")
         output = output.transpose((0, 2, 1, 3)).reshape(B, T, -1)
 
+        if return_attn:
+            return self.output(output), attn_weights
         return self.output(output)
 
 class Block(nn.Module):

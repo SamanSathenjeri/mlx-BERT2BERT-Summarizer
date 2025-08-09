@@ -7,6 +7,6 @@ model:
    block_size: 64             # Context size
 
 training:
-   batch_size: 32             # Batches trained at the same time
-   num_epochs: 15             # number of complete passes through the dataset
+   batch_size: 64             # Batches trained at the same time
+   num_epochs: 10             # number of complete passes through the dataset
    learning_rate: 0.0003      # learning rate for training
