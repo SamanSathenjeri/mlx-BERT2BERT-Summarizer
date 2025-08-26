@@ -1,6 +1,8 @@
 # BERT2BERT Summarization using Apple Silicon MLX Framework
 
-A custom encoder-decoder transformer built from scratch in [MLX](https://github.com/ml-explore/mlx), designed for text summarization using a pretrained BERT encoder and a lightweight BERT-style decoder. Trained on whole WikiText-103-v1 dataset (100 million tokens) in under 2 hours and Finetuned on the CNN/Dailymail dataset for text summarization (300,000 unique news articles or around 260 million tokens) within 4 hours.
+A custom encoder-decoder transformer built from scratch in [MLX](https://github.com/ml-explore/mlx), designed for text summarization using a pretrained BERT encoder and a lightweight BERT-style decoder. Trained on Wikitext-2-raw-v1 dataset (100 million tokens) and Finetuned on the CNN/Dailymail dataset for text summarization (300,000 unique news articles or around 260 million tokens) all on my **Macbook M1 Air**. 
+
+**NOTE: Will add weights and training/validation charts when done training! Stay Tuned!**
 
 <!-- INSERT GIF HERE **************************
 https://github.com/charmbracelet/vhs -->
@@ -133,7 +135,7 @@ class CrossAttention(nn.Module):
 
 
 #### Training:
-- I used the **Wikitext_103_v1** Dataset to pretrain my BERT models on a variety of information. This dataset was chosen due to its preservation of punctuation and other natural language formatting. In addition, the Wikitext 103 dataset holds a variety of different tokens (making it more suitable to handle more words) and allows plenty of opportunities for BERT to learn using masked language modeling.
+- I used the **Wikitext-2-raw-v1** Dataset to pretrain my BERT models on a variety of information. This dataset was chosen due to its preservation of punctuation and other natural language formatting. In addition, the Wikitext 103 dataset holds a variety of different tokens (making it more suitable to handle more words) and allows plenty of opportunities for BERT to learn using masked language modeling.
 - I used the **CNN/DailyMail** Dataset to finetune the BERT2BERT model on a multitude of news articles and their summaries. This will teach the model to understand the document or text provided and create an abstractive summary (rewriting from scratch) about that piece of text. The summaries are human written by professional journalists and provides information about a variety of articles and topics.
 
 <!-- - Attention Maps:

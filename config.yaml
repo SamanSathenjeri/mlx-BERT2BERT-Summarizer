@@ -4,9 +4,10 @@ model:
    num_heads: 8               # Number of attention heads per block (head_dimension = num_embd//num_attention heads)
    hidden_embd: 1024          # Overall FeedForward dim size (4 * n_embd)
    vocab_size: 30522          # number of tokens in the vocabulary
-   block_size: 64             # Context size
+   block_size: 512            # Context size
+   dropout: 0.1               # Percentage of layer nodes to drop out of training
 
 training:
-   batch_size: 64             # Batches trained at the same time
+   batch_size: 32              # Batches trained at the same time
    num_epochs: 10             # number of complete passes through the dataset
    learning_rate: 0.0003      # learning rate for training
